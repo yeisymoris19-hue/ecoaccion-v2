@@ -1,0 +1,6 @@
+{
+  "name": "EcoAcción",
+  "description": "Plataforma comunitaria y ambiental para la República Dominicana: Tu voz informa, nuestras acciones transforman.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
