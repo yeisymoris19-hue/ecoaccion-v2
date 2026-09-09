@@ -28,7 +28,7 @@ interface NavbarProps {
   totalReportsCount: number;
   totalCampaignsCount: number;
   currentUser: UserProfile | null;
-  onOpenAuthModal: () => void;
+  onOpenAuthModal: (reason?: string) => void;
   onLogout: () => void;
 }
 
@@ -207,7 +207,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               <button
-                onClick={onOpenAuthModal}
+                type="button"
+                onClick={() => onOpenAuthModal('Ingresa con tu correo para participar activamente en la comunidad.')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 hover:border-emerald-600 hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-900 text-xs font-bold transition-all cursor-pointer"
                 id="btn-login-header"
               >
@@ -270,11 +271,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ¿Deseas participar activamente?
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenAuthModal();
+                  onOpenAuthModal('Ingresa con tu correo para participar activamente en la comunidad.');
                 }}
-                className="px-3 py-1.5 bg-emerald-800 text-white rounded-xl text-xs font-bold"
+                className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 Ingresar con mi correo
               </button>

@@ -142,7 +142,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          {actionReason && (
+          {typeof actionReason === 'string' && actionReason.trim().length > 0 && (
             <div className="mt-3 p-2.5 rounded-xl bg-emerald-800/80 border border-emerald-600/50 text-xs text-emerald-100 flex items-center gap-2">
               <Sparkles size={14} className="text-amber-300 shrink-0" />
               <span>{actionReason}</span>

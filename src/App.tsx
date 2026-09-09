@@ -631,7 +631,8 @@ export default function App() {
         totalCampaignsCount={campaigns.filter((c) => c.status === 'activa').length}
         currentUser={currentUser}
         onOpenAuthModal={(reason) => {
-          setAuthModalReason(reason);
+          const sanitizedReason = typeof reason === 'string' && reason.trim() ? reason : undefined;
+          setAuthModalReason(sanitizedReason);
           setPendingAction(null);
           setIsAuthModalOpen(true);
         }}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle2, ArrowRight, ShieldCheck, Heart, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight, ShieldCheck, Heart, Sparkles, Quote } from 'lucide-react';
 import { BeeLogo } from './BeeLogo';
 
 interface AboutPhilosophyModalProps {
@@ -58,6 +58,47 @@ export const AboutPhilosophyModal: React.FC<AboutPhilosophyModalProps> = ({ isOp
             <p className="text-slate-700 leading-relaxed text-sm sm:text-base mt-2.5">
               Además, la abeja mantiene una estrecha relación vital con la naturaleza y el equilibrio ambiental a través de la polinización, lo que también representa el compromiso firme de nuestra plataforma con el <strong>reciclaje</strong> y la protección de los recursos naturales de la República Dominicana.
             </p>
+          </div>
+
+          {/* Carta de la Creadora */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-xl border border-emerald-700/60">
+            <div className="absolute top-0 right-0 translate-x-4 -translate-y-4 text-emerald-600/15 pointer-events-none">
+              <Quote size={130} />
+            </div>
+
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-amber-300 text-xs font-extrabold uppercase tracking-wider mb-3">
+                <Quote size={16} className="text-amber-400" />
+                <span>Carta de la Creadora</span>
+              </div>
+
+              <blockquote className="text-base sm:text-lg font-medium text-emerald-50 leading-relaxed italic mb-6">
+                «Aislar los problemas no sirve de nada si no nos unimos para resolverlos. Diseñé esta app para darle una herramienta a cada ciudadano que quiera convertir nuestro en algo mejor. Pasemos de la queja a la propuesta y de la propuesta a la acción.»
+              </blockquote>
+
+              <div className="flex items-center justify-between flex-wrap gap-4 pt-4 border-t border-emerald-700/70">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-200 p-0.5 shadow-md">
+                    <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-amber-300 font-black text-sm">
+                      YM
+                    </div>
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-white text-base leading-tight">
+                      Yeisy Jazmel Moris
+                    </h5>
+                    <p className="text-xs text-emerald-300 font-medium">
+                      Creadora, Diseñadora y Fundadora de EcoAcción RD
+                    </p>
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-800/80 border border-emerald-600/70 text-xs font-semibold text-emerald-200">
+                  <span>🇩🇴</span>
+                  <span>República Dominicana</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Nuestra Filosofía y el Flujo */}
