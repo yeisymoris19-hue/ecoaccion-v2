@@ -62,6 +62,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2 text-slate-400">
               <li>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectTab('ecoalerta');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -73,6 +74,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectTab('ideas');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -84,6 +86,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectTab('ecoayuda');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -95,6 +98,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectTab('campanas');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -106,6 +110,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectTab('comunidad');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -126,6 +131,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2 text-slate-400">
               <li>
                 <button
+                  type="button"
                   onClick={onOpenAbout}
                   className="inline-flex items-center gap-1.5 hover:text-emerald-300 transition-colors cursor-pointer text-left"
                 >
@@ -135,6 +141,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={onOpenTerms}
                   id="btn-footer-terms"
                   className="inline-flex items-center gap-1.5 hover:text-emerald-400 transition-colors cursor-pointer text-left font-medium text-slate-300"
@@ -145,6 +152,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <button
+                  type="button"
                   onClick={onOpenPrivacy}
                   id="btn-footer-privacy"
                   className="inline-flex items-center gap-1.5 hover:text-emerald-400 transition-colors cursor-pointer text-left font-medium text-slate-300"
@@ -157,7 +165,7 @@ export const Footer: React.FC<FooterProps> = ({
 
             <div className="pt-2 text-[11px] text-slate-500 leading-relaxed">
               <span className="text-emerald-400 font-semibold block mb-0.5">Filosofía Central:</span>
-              Pasar de la queja a la propuesta, y de la propuesta a la acción colectiva.
+              <p>Pasar de la queja a la propuesta, y de la propuesta a la acción colectiva.</p>
             </div>
           </div>
         </div>
@@ -166,7 +174,7 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
           <div className="text-center md:text-left">
             <p className="font-semibold text-slate-300">
-              © 2026 EcoAcción RD. Todos los derechos reservados. Desarrollado y creado por Yeisy Moris.
+              © 2026 EcoAcción RD. Todos los derechos reservados. Desarrollado y creado por Yeisy Jazmel Moris.
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5">
               Titularidad intelectual y tecnológica de Yeisy Jazmel Moris • República Dominicana
@@ -175,6 +183,8 @@ export const Footer: React.FC<FooterProps> = ({
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-400">
             <button
+              type="button"
+              id="btn-footer-terms-bottom"
               onClick={onOpenTerms}
               className="hover:text-emerald-400 transition-colors cursor-pointer underline underline-offset-2"
             >
@@ -182,6 +192,8 @@ export const Footer: React.FC<FooterProps> = ({
             </button>
             <span>•</span>
             <button
+              type="button"
+              id="btn-footer-privacy-bottom"
               onClick={onOpenPrivacy}
               className="hover:text-emerald-400 transition-colors cursor-pointer underline underline-offset-2"
             >
