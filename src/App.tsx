@@ -1,10 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  INITIAL_REPORTS, 
-  INITIAL_IDEAS, 
-  INITIAL_CAMPAIGNS, 
-  COMMUNITY_MEMBERS 
-} from './data/initialData';
+import React, { useState, useEffect, useCallback } from 'react';
 import { EcoReport, CommunityIdea, Campaign, CommunityMember, UserProfile } from './types';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { EcoAlertaSection } from './components/EcoAlertaSection';
@@ -20,125 +14,28 @@ import { AboutPhilosophyModal } from './components/AboutPhilosophyModal';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { LegalModal, LegalModalType } from './components/LegalModals';
-import { BeeLogo } from './components/BeeLogo';
+import { api } from './services/api';
 import { 
   CheckCircle2, 
-  Heart, 
-  Flag, 
-  AlertTriangle, 
-  Sprout, 
   Sparkles,
-  ArrowUp,
   X,
   LogIn
 } from 'lucide-react';
 
-// Purge legacy mock data or fake test items from browser's localStorage
-if (typeof window !== 'undefined') {
-  try {
-    const legacyPurgeKey = 'ecoaccion_clean_zero_data_v2';
-    if (!localStorage.getItem(legacyPurgeKey)) {
-      const savedReports = localStorage.getItem('ecoaccion_reports');
-      if (savedReports && (savedReports.includes('rep-1') || savedReports.includes('Marino') || savedReports.includes('Vertedero') || savedReports.includes('"supportsCount":38'))) {
-        localStorage.removeItem('ecoaccion_reports');
-      }
-      const savedIdeas = localStorage.getItem('ecoaccion_ideas');
-      if (savedIdeas && (savedIdeas.includes('idea-1') || savedIdeas.includes('idea-2') || savedIdeas.includes('"votesCount":24'))) {
-        localStorage.removeItem('ecoaccion_ideas');
-      }
-      const savedCampaigns = localStorage.getItem('ecoaccion_campaigns');
-      if (savedCampaigns && (savedCampaigns.includes('camp-1') || savedCampaigns.includes('camp-2') || savedCampaigns.includes('Montesinos'))) {
-        localStorage.removeItem('ecoaccion_campaigns');
-      }
-      const savedMembers = localStorage.getItem('ecoaccion_members');
-      if (savedMembers && (savedMembers.includes('mem-1') || savedMembers.includes('Marino'))) {
-        localStorage.removeItem('ecoaccion_members');
-      }
-      localStorage.setItem(legacyPurgeKey, 'true');
-    }
-  } catch (e) {
-    console.error('Storage purge check notice:', e);
-  }
-}
-
 export default function App() {
   // Authentication state
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_current_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalReason, setAuthModalReason] = useState<string | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [dismissedGuestBanner, setDismissedGuestBanner] = useState(false);
 
-  // Persistence via localStorage with clean start (empty array [])
-  const [reports, setReports] = useState<EcoReport[]>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_reports');
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return [];
-      // Clean out any legacy mock reports if they linger
-      return parsed.filter((r) => 
-        r && r.id && 
-        !['rep-1', 'rep-2', 'rep-3', 'rep-4'].includes(r.id) &&
-        !['Lic. Marino Peralta', 'María Altagracia Rosario', 'Ing. Ramón Castillo', 'Dra. Carmen Paulino'].includes(r.authorName)
-      );
-    } catch {
-      return [];
-    }
-  });
-
-  const [ideas, setIdeas] = useState<CommunityIdea[]>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_ideas');
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((i) => i && i.id && !['idea-1', 'idea-2', 'idea-3', 'idea-4'].includes(i.id));
-    } catch {
-      return [];
-    }
-  });
-
-  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_campaigns');
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((c) => c && c.id && !['camp-1', 'camp-2', 'camp-3', 'camp-4'].includes(c.id));
-    } catch {
-      return [];
-    }
-  });
-
-  const [members, setMembers] = useState<CommunityMember[]>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_members');
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((m) => m && m.id && !['mem-1', 'mem-2', 'mem-3', 'mem-4', 'mem-5'].includes(m.id));
-    } catch {
-      return [];
-    }
-  });
-
-  const [connectedMemberIds, setConnectedMemberIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('ecoaccion_connections');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Central Database collections - Starts empty as specified by user instructions
+  const [reports, setReports] = useState<EcoReport[]>([]);
+  const [ideas, setIdeas] = useState<CommunityIdea[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [connectedMemberIds, setConnectedMemberIds] = useState<string[]>([]);
 
   // Navigation & Modals
   const [activeTab, setActiveTab] = useState<ActiveTab>('ecoalerta');
@@ -160,83 +57,54 @@ export default function App() {
     }, 3500);
   };
 
-  // Save to localStorage
-  useEffect(() => {
+  // Fetch all central database collections
+  const loadDatabaseData = useCallback(async () => {
     try {
-      if (currentUser) {
-        localStorage.setItem('ecoaccion_current_user', JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem('ecoaccion_current_user');
+      const [allReports, allIdeas, allCampaigns, allMembers] = await Promise.allSettled([
+        api.reports.getAll(),
+        api.ideas.getAll(),
+        api.campaigns.getAll(),
+        api.members.getAll()
+      ]);
+
+      if (allReports.status === 'fulfilled') setReports(allReports.value);
+      if (allIdeas.status === 'fulfilled') setIdeas(allIdeas.value);
+      if (allCampaigns.status === 'fulfilled') setCampaigns(allCampaigns.value);
+      if (allMembers.status === 'fulfilled') setMembers(allMembers.value);
+    } catch (err) {
+      console.error('Error loading database data:', err);
+    }
+  }, []);
+
+  // Initial user session restoration & database load
+  useEffect(() => {
+    async function initApp() {
+      try {
+        const user = await api.auth.getMe();
+        if (user) {
+          setCurrentUser(user);
+          const connections = await api.members.getConnections();
+          setConnectedMemberIds(connections);
+        }
+      } catch (err) {
+        console.error('Session verify error:', err);
       }
-    } catch (err) {
-      console.error('Error saving current user to storage', err);
+      await loadDatabaseData();
     }
-  }, [currentUser]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('ecoaccion_reports', JSON.stringify(reports));
-    } catch (err) {
-      console.error('Error saving reports to storage', err);
-    }
-  }, [reports]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('ecoaccion_ideas', JSON.stringify(ideas));
-    } catch (err) {
-      console.error('Error saving ideas to storage', err);
-    }
-  }, [ideas]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('ecoaccion_campaigns', JSON.stringify(campaigns));
-    } catch (err) {
-      console.error('Error saving campaigns to storage', err);
-    }
-  }, [campaigns]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('ecoaccion_members', JSON.stringify(members));
-    } catch (err) {
-      console.error('Error saving members to storage', err);
-    }
-  }, [members]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('ecoaccion_connections', JSON.stringify(connectedMemberIds));
-    } catch (err) {
-      console.error('Error saving connections to storage', err);
-    }
-  }, [connectedMemberIds]);
+    initApp();
+  }, [loadDatabaseData]);
 
   // Handle User Login / Register
-  const handleLogin = (user: UserProfile) => {
+  const handleLogin = async (user: UserProfile) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
     showToast(`¡Bienvenido/a a EcoAcción, ${user.name}!`);
 
-    // Add user as verified member of community directory if not already added
-    setMembers((prev) => {
-      const exists = prev.some((m) => m.id === user.id || m.name.toLowerCase() === user.name.toLowerCase());
-      if (exists) return prev;
-      const newMember: CommunityMember = {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        province: user.province,
-        bio: user.bio || `Ciudadano(a) comprometido(a) con la mejora y acción comunitaria en ${user.province}.`,
-        verified: true,
-        avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=059669`,
-        badges: ['Ciudadano Registrado'],
-        campaignsJoined: 0,
-        reportsSubmitted: 0,
-      };
-      return [newMember, ...prev];
-    });
+    // Reload data with user-specific flags (userSupported, userVoted, isUserRegistered)
+    await loadDatabaseData();
+    const connections = await api.members.getConnections();
+    setConnectedMemberIds(connections);
 
     if (pendingAction) {
       const action = pendingAction;
@@ -245,9 +113,12 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await api.auth.logout();
     setCurrentUser(null);
+    setConnectedMemberIds([]);
     showToast('Has cerrado sesión correctamente.');
+    await loadDatabaseData();
   };
 
   // Protected Action Checker: opens auth modal if user is guest
@@ -270,242 +141,236 @@ export default function App() {
     );
   };
 
-  // Handler: Toggle Support for a Report
+  // Handler: Toggle Support for a Report (Stored in central database)
   const handleToggleReportSupport = (reportId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
 
-    const proceed = requireAuth(() => {
-      setReports((prev) =>
-        prev.map((r) => {
-          if (r.id === reportId) {
-            const isSupported = !r.userSupported;
-            const nextCount = isSupported ? r.supportsCount + 1 : Math.max(0, r.supportsCount - 1);
-            if (isSupported) {
-              showToast('¡Has apoyado este reporte comunitario!');
+    const proceed = requireAuth(async () => {
+      try {
+        const result = await api.reports.toggleSupport(reportId);
+        
+        setReports((prev) =>
+          prev.map((r) => {
+            if (r.id === reportId) {
+              return {
+                ...r,
+                userSupported: result.supported,
+                supportsCount: result.supportsCount,
+              };
             }
-            return {
-              ...r,
-              userSupported: isSupported,
-              supportsCount: nextCount,
-            };
-          }
-          return r;
-        })
-      );
-
-      // Keep selectedReport synchronized if open
-      if (selectedReport && selectedReport.id === reportId) {
-        setSelectedReport((prev) =>
-          prev
-            ? {
-                ...prev,
-                userSupported: !prev.userSupported,
-                supportsCount: !prev.userSupported ? prev.supportsCount + 1 : Math.max(0, prev.supportsCount - 1),
-              }
-            : null
+            return r;
+          })
         );
+
+        if (selectedReport && selectedReport.id === reportId) {
+          setSelectedReport((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  userSupported: result.supported,
+                  supportsCount: result.supportsCount,
+                }
+              : null
+          );
+        }
+
+        showToast(result.supported ? '¡Has apoyado este reporte comunitario!' : 'Has retirado tu apoyo.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al procesar el apoyo.');
       }
     }, 'Para respaldar y apoyar reportes comunitarios, ingresa con tu correo.');
 
     if (!proceed) return;
   };
 
-  // Handler: Add Comment to Report
+  // Handler: Add Comment to Report (Central database)
   const handleAddReportComment = (reportId: string, content: string, isSolution: boolean) => {
-    const proceed = requireAuth(() => {
-      const authorName = currentUser?.name || 'Vecino Dominicano';
-      const authorRole = currentUser?.role || (isSolution ? 'Propuesta ciudadana' : 'Comunidad');
+    const proceed = requireAuth(async () => {
+      try {
+        const result = await api.reports.addComment(reportId, content, isSolution);
 
-      const newComment = {
-        id: `c-${Date.now()}`,
-        authorName,
-        authorRole,
-        content,
-        createdAt: 'Justo ahora',
-        isSolution,
-      };
-
-      setReports((prev) =>
-        prev.map((r) => {
-          if (r.id === reportId) {
-            const updatedComments = [...r.comments, newComment];
-            const updatedStatus = isSolution && r.status === 'reportado' ? 'con_propuesta' : r.status;
-            return {
-              ...r,
-              comments: updatedComments,
-              status: updatedStatus,
-            };
-          }
-          return r;
-        })
-      );
-
-      if (selectedReport && selectedReport.id === reportId) {
-        setSelectedReport((prev) =>
-          prev
-            ? {
-                ...prev,
-                comments: [...prev.comments, newComment],
-                status: isSolution && prev.status === 'reportado' ? 'con_propuesta' : prev.status,
-              }
-            : null
+        setReports((prev) =>
+          prev.map((r) => {
+            if (r.id === reportId) {
+              return {
+                ...r,
+                comments: result.comments,
+                status: (result.status as any) || r.status,
+              };
+            }
+            return r;
+          })
         );
-      }
 
-      showToast('Aporte publicado correctamente.');
+        if (selectedReport && selectedReport.id === reportId) {
+          setSelectedReport((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  comments: result.comments,
+                  status: (result.status as any) || prev.status,
+                }
+              : null
+          );
+        }
+
+        showToast('Aporte publicado correctamente en el servidor.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al enviar el comentario.');
+      }
     }, 'Para aportar propuestas de solución o comentarios a este reporte, ingresa con tu correo.');
 
     if (!proceed) return;
   };
 
-  // Handler: Create New Report
-  const handleCreateReport = (
+  // Handler: Flag / Report content for moderation
+  const handleFlagReport = (reportId: string) => {
+    const proceed = requireAuth(async () => {
+      try {
+        await api.reports.flag(reportId, 'Contenido inapropiado o reportado');
+        showToast('Gracias. El reporte ha sido enviado al equipo de moderación.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al enviar la denuncia.');
+      }
+    }, 'Para reportar contenido a moderación, ingresa con tu cuenta.');
+
+    if (!proceed) return;
+  };
+
+  // Handler: Create New Report in Central Database
+  const handleCreateReport = async (
     reportData: Omit<EcoReport, 'id' | 'createdAt' | 'supportsCount' | 'userSupported' | 'comments'>
   ) => {
-    const authorName = currentUser ? currentUser.name : reportData.authorName;
-    const authorAvatar = currentUser?.avatar || reportData.authorAvatar;
+    try {
+      const created = await api.reports.create({
+        title: reportData.title,
+        category: reportData.category,
+        province: reportData.province,
+        sector: reportData.sector,
+        addressDetails: reportData.addressDetails,
+        imageUrl: reportData.imageUrl,
+        problemDescription: reportData.problemDescription,
+        proposedSolution: reportData.proposedSolution,
+      });
 
-    const newReport: EcoReport = {
-      ...reportData,
-      authorName,
-      authorAvatar,
-      id: `rep-${Date.now()}`,
-      createdAt: 'Hace un momento',
-      supportsCount: 0,
-      userSupported: false,
-      comments: [],
-    };
-
-    setReports((prev) => [newReport, ...prev]);
-    setActiveTab('ecoalerta');
-    showToast('¡Reporte publicado en EcoAlerta con tu propuesta de solución!');
-
-    if (currentUser) {
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === currentUser.id ? { ...m, reportsSubmitted: m.reportsSubmitted + 1 } : m
-        )
-      );
+      setReports((prev) => [created, ...prev]);
+      setActiveTab('ecoalerta');
+      showToast('¡Reporte registrado en la base de datos comunitaria!');
+      await loadDatabaseData();
+    } catch (err: any) {
+      showToast(err.message || 'Error al publicar el reporte.');
     }
   };
 
-  // Handler: Vote for Idea
+  // Handler: Vote for Idea in Central Database
   const handleVoteIdea = (ideaId: string) => {
-    const proceed = requireAuth(() => {
-      setIdeas((prev) =>
-        prev.map((idea) => {
-          if (idea.id === ideaId) {
-            const isVoted = !idea.userVoted;
-            const nextVotes = isVoted ? idea.votesCount + 1 : Math.max(0, idea.votesCount - 1);
-            if (isVoted) {
-              showToast('¡Voto registrado para esta propuesta!');
+    const proceed = requireAuth(async () => {
+      try {
+        const result = await api.ideas.toggleVote(ideaId);
+
+        setIdeas((prev) =>
+          prev.map((idea) => {
+            if (idea.id === ideaId) {
+              return {
+                ...idea,
+                userVoted: result.voted,
+                votesCount: result.votesCount,
+              };
             }
-            return {
-              ...idea,
-              userVoted: isVoted,
-              votesCount: nextVotes,
-            };
-          }
-          return idea;
-        })
-      );
+            return idea;
+          })
+        );
+
+        showToast(result.voted ? '¡Voto registrado para esta propuesta!' : 'Has retirado tu voto.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al procesar el voto.');
+      }
     }, 'Para votar por propuestas e iniciativas vecinales, ingresa con tu correo.');
 
     if (!proceed) return;
   };
 
-  // Handler: Add New Idea
+  // Handler: Add New Idea in Central Database
   const handleAddIdea = (
     ideaData: Omit<CommunityIdea, 'id' | 'createdAt' | 'votesCount' | 'userVoted' | 'commentsCount' | 'comments'>
   ) => {
-    const proceed = requireAuth(() => {
-      const newIdea: CommunityIdea = {
-        ...ideaData,
-        id: `idea-${Date.now()}`,
-        createdAt: 'Justo ahora',
-        votesCount: 0,
-        userVoted: false,
-        commentsCount: 0,
-        comments: [],
-        proposedBy: currentUser?.name || ideaData.proposedBy,
-      };
+    const proceed = requireAuth(async () => {
+      try {
+        const created = await api.ideas.create({
+          title: ideaData.title,
+          description: ideaData.description,
+          province: ideaData.province,
+          sector: ideaData.sector,
+          category: ideaData.category,
+        });
 
-      setIdeas((prev) => [newIdea, ...prev]);
-      showToast('¡Propuesta ciudadana compartida con éxito!');
+        setIdeas((prev) => [created, ...prev]);
+        showToast('¡Propuesta ciudadana guardada en la base de datos!');
+        await loadDatabaseData();
+      } catch (err: any) {
+        showToast(err.message || 'Error al compartir la propuesta.');
+      }
     }, 'Para compartir una idea o propuesta comunitaria, ingresa con tu correo.');
 
     if (!proceed) return;
   };
 
-  // Handler: Add Comment to Idea
+  // Handler: Add Comment to Idea in Central Database
   const handleAddCommentToIdea = (ideaId: string, text: string) => {
-    const proceed = requireAuth(() => {
-      const newComment = {
-        id: `ci-${Date.now()}`,
-        authorName: currentUser?.name || 'Vecino Dominicano',
-        content: text,
-        createdAt: 'Hace un momento',
-      };
+    const proceed = requireAuth(async () => {
+      try {
+        const result = await api.ideas.addComment(ideaId, text);
 
-      setIdeas((prev) =>
-        prev.map((idea) => {
-          if (idea.id === ideaId) {
-            return {
-              ...idea,
-              commentsCount: idea.commentsCount + 1,
-              comments: [...idea.comments, newComment],
-            };
-          }
-          return idea;
-        })
-      );
-      showToast('Aporte añadido a la propuesta.');
+        setIdeas((prev) =>
+          prev.map((idea) => {
+            if (idea.id === ideaId) {
+              return {
+                ...idea,
+                commentsCount: result.commentsCount,
+                comments: result.comments,
+              };
+            }
+            return idea;
+          })
+        );
+        showToast('Aporte añadido a la propuesta.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al publicar comentario.');
+      }
     }, 'Para comentar en esta propuesta, ingresa con tu correo.');
 
     if (!proceed) return;
   };
 
-  // Handler: Participate / Leave Campaign
+  // Handler: Participate / Leave Campaign in Central Database
   const handleToggleParticipateCampaign = (campaignId: string) => {
-    const proceed = requireAuth(() => {
-      setCampaigns((prev) =>
-        prev.map((camp) => {
-          if (camp.id === campaignId) {
-            const isRegistered = !camp.isUserRegistered;
-            const nextCount = isRegistered
-              ? camp.registeredVolunteers + 1
-              : Math.max(0, camp.registeredVolunteers - 1);
+    const proceed = requireAuth(async () => {
+      try {
+        const result = await api.campaigns.toggleParticipate(campaignId);
 
-            showToast(
-              isRegistered
-                ? '¡Te has inscrito con éxito en la campaña! Gracias por tu compromiso.'
-                : 'Has cancelado tu inscripción en la campaña.'
-            );
-
-            if (currentUser) {
-              setMembers((mPrev) =>
-                mPrev.map((m) =>
-                  m.id === currentUser.id
-                    ? {
-                        ...m,
-                        campaignsJoined: isRegistered
-                          ? m.campaignsJoined + 1
-                          : Math.max(0, m.campaignsJoined - 1),
-                      }
-                    : m
-                )
-              );
+        setCampaigns((prev) =>
+          prev.map((camp) => {
+            if (camp.id === campaignId) {
+              return {
+                ...camp,
+                isUserRegistered: result.isUserRegistered,
+                registeredVolunteers: result.registeredVolunteers,
+              };
             }
+            return camp;
+          })
+        );
 
-            return {
-              ...camp,
-              isUserRegistered: isRegistered,
-              registeredVolunteers: nextCount,
-            };
-          }
-          return camp;
-        })
-      );
+        showToast(
+          result.isUserRegistered
+            ? '¡Te has inscrito con éxito en la campaña! Gracias por tu compromiso.'
+            : 'Has cancelado tu inscripción en la campaña.'
+        );
+
+        await loadDatabaseData();
+      } catch (err: any) {
+        showToast(err.message || 'Error al procesar la inscripción.');
+      }
     }, 'Para inscribirte y participar en esta campaña comunitaria, ingresa con tu correo.');
 
     if (!proceed) return;
@@ -519,38 +384,36 @@ export default function App() {
     }, 'Para convocar a una campaña ciudadana de impacto, ingresa con tu correo.');
   };
 
-  // Handler: Create Campaign
-  const handleCreateCampaign = (
+  // Handler: Create Campaign in Central Database
+  const handleCreateCampaign = async (
     campaignData: Omit<Campaign, 'id' | 'registeredVolunteers' | 'isUserRegistered' | 'status'>
   ) => {
-    const newCamp: Campaign = {
-      ...campaignData,
-      id: `camp-${Date.now()}`,
-      registeredVolunteers: 0,
-      isUserRegistered: false,
-      status: 'activa',
-    };
+    try {
+      const created = await api.campaigns.create(campaignData);
+      setCampaigns((prev) => [created, ...prev]);
 
-    setCampaigns((prev) => [newCamp, ...prev]);
+      // If originated from a report, update the report status and associated campaign id
+      if (campaignData.originReportId) {
+        setReports((prev) =>
+          prev.map((r) => {
+            if (r.id === campaignData.originReportId) {
+              return {
+                ...r,
+                status: 'en_campana',
+                associatedCampaignId: created.id,
+              };
+            }
+            return r;
+          })
+        );
+      }
 
-    // If originated from a report, update the report status and associated campaign id
-    if (campaignData.originReportId) {
-      setReports((prev) =>
-        prev.map((r) => {
-          if (r.id === campaignData.originReportId) {
-            return {
-              ...r,
-              status: 'en_campana',
-              associatedCampaignId: newCamp.id,
-            };
-          }
-          return r;
-        })
-      );
+      setActiveTab('campanas');
+      showToast('¡Campaña comunitaria creada en el servidor y abierta para voluntarios!');
+      await loadDatabaseData();
+    } catch (err: any) {
+      showToast(err.message || 'Error al crear la campaña comunitaria.');
     }
-
-    setActiveTab('campanas');
-    showToast('¡Campaña comunitaria creada y abierta para voluntarios!');
   };
 
   // Convert Report to Campaign
@@ -595,19 +458,16 @@ export default function App() {
     }, 'Para transformar esta propuesta en una campaña comunitaria, ingresa con tu correo.');
   };
 
-  // Handler: Connect with Community Member
+  // Handler: Connect with Community Member in Central Database
   const handleConnectWithMember = (memberId: string) => {
-    requireAuth(() => {
-      setConnectedMemberIds((prev) => {
-        const isAlready = prev.includes(memberId);
-        if (isAlready) {
-          showToast('Conexión retirada.');
-          return prev.filter((id) => id !== memberId);
-        } else {
-          showToast('¡Conectado exitosamente en la red ciudadana!');
-          return [...prev, memberId];
-        }
-      });
+    requireAuth(async () => {
+      try {
+        const result = await api.members.toggleConnect(memberId);
+        setConnectedMemberIds(result.connections);
+        showToast(result.connected ? '¡Conectado exitosamente en la red ciudadana!' : 'Conexión retirada.');
+      } catch (err: any) {
+        showToast(err.message || 'Error al conectar con el miembro.');
+      }
     }, 'Para conectar e interactuar con otros miembros dominicanos, ingresa con tu correo.');
   };
 
@@ -760,6 +620,7 @@ export default function App() {
         onToggleSupport={handleToggleReportSupport}
         onAddComment={handleAddReportComment}
         onConvertToCampaign={handleConvertReportToCampaign}
+        onFlagReport={handleFlagReport}
         onViewCampaign={() => {
           setSelectedReport(null);
           setActiveTab('campanas');

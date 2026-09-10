@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { CommunityIdea, ProvinceRD } from '../types';
 import { DOMINICAN_PROVINCES } from '../data/initialData';
+import { formatRelativeTime } from '../services/api';
 
 interface IdeasSectionProps {
   ideas: CommunityIdea[];
@@ -174,7 +175,7 @@ export const IdeasSection: React.FC<IdeasSectionProps> = ({
                       {idea.sector}, {idea.province}
                     </span>
                     <span>•</span>
-                    <span>{idea.createdAt}</span>
+                    <span>{formatRelativeTime(idea.createdAt)}</span>
                   </div>
 
                   <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">

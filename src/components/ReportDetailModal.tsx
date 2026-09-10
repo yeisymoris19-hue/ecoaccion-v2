@@ -14,6 +14,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { EcoReport, Comment } from '../types';
+import { formatRelativeTime } from '../services/api';
 
 interface ReportDetailModalProps {
   report: EcoReport | null;
@@ -23,6 +24,7 @@ interface ReportDetailModalProps {
   onAddComment: (reportId: string, commentText: string, isSolution: boolean) => void;
   onConvertToCampaign: (report: EcoReport) => void;
   onViewCampaign?: (campaignId: string) => void;
+  onFlagReport?: (reportId: string) => void;
 }
 
 const CATEGORY_NAMES: Record<string, string> = {
@@ -133,7 +135,7 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
                 <span>Por <strong>{report.authorName}</strong></span>
               </div>
               <span>•</span>
-              <span>{report.createdAt}</span>
+              <span>{formatRelativeTime(report.createdAt)}</span>
             </div>
             {report.addressDetails && (
               <p className="text-xs text-slate-600 italic mt-1 bg-slate-50 p-2 rounded-lg border border-slate-200">
@@ -258,7 +260,7 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400">{c.createdAt}</span>
+                      <span className="text-[10px] text-slate-400">{formatRelativeTime(c.createdAt)}</span>
                     </div>
                     <p className="text-slate-700 leading-relaxed">{c.content}</p>
                   </div>

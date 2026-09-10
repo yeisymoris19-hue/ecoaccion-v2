@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, AlertCircle, Sparkles, MapPin, Upload, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, Camera, Sparkles, MapPin, Upload, Trash2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { CategoryType, ProvinceRD, EcoReport, UserProfile } from '../types';
 import { DOMINICAN_PROVINCES } from '../data/initialData';
+import { api } from '../services/api';
 
 interface NewReportModalProps {
   isOpen: boolean;
@@ -37,6 +38,8 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
   const [proposedSolution, setProposedSolution] = useState('');
   const [authorName, setAuthorName] = useState(currentUser?.name || 'Ciudadano Activo');
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -73,15 +76,22 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
     onClose();
   };
 
-  const processFile = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+  const processFile = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Por favor selecciona un archivo de imagen válido (JPG, PNG o WebP).');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+      const serverUrl = await api.upload.uploadPhoto(file);
+      setImageUrl(serverUrl);
+    } catch (err: any) {
+      setUploadError(err.message || 'Error al subir la fotografía al servidor central.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -265,13 +275,26 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
             </div>
           </div>
 
-          {/* Fotografía o Evidencia Real */}
+          {/* Fotografía o Evidencia Real Centralizada */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Fotografía de evidencia (Carga una foto real de tu celular o computadora)
+              Fotografía de evidencia (Se almacena en el servidor central de EcoAcción)
             </label>
 
-            {imageUrl ? (
+            {uploadError && (
+              <div className="mb-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0 text-rose-600" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {isUploading ? (
+              <div className="border-2 border-dashed border-emerald-500 rounded-2xl p-8 text-center bg-emerald-50/50 flex flex-col items-center justify-center gap-2">
+                <Loader2 size={28} className="animate-spin text-emerald-700" />
+                <p className="text-xs font-bold text-emerald-950">Subiendo fotografía al servidor central...</p>
+                <p className="text-[11px] text-emerald-700">Guardando archivo permanentemente para que todos los usuarios puedan verla</p>
+              </div>
+            ) : imageUrl ? (
               <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500 bg-slate-100 max-h-56">
                 <img 
                   src={imageUrl} 
@@ -290,7 +313,7 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
                 </div>
                 <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[11px] px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   <CheckCircle2 size={13} className="text-emerald-400" />
-                  <span>Foto cargada con éxito</span>
+                  <span>Foto guardada en el servidor</span>
                 </div>
               </div>
             ) : (
@@ -350,7 +373,8 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold shadow-md shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer"
+              disabled={isUploading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-sm font-bold shadow-md shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
               id="submit-new-report-btn"
             >
               Publicar Reporte y Propuesta

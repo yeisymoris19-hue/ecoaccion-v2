@@ -30,6 +30,7 @@ export type ProvinceRD =
 
 export interface Comment {
   id: string;
+  authorId?: string;
   authorName: string;
   authorRole?: string;
   authorAvatar?: string;
@@ -46,6 +47,7 @@ export interface EcoReport {
   sector: string;
   addressDetails?: string;
   imageUrl?: string;
+  authorId?: string;
   authorName: string;
   authorAvatar?: string;
   createdAt: string;
@@ -63,6 +65,7 @@ export interface CommunityIdea {
   id: string;
   title: string;
   description: string;
+  authorId?: string;
   proposedBy: string;
   avatar?: string;
   province: ProvinceRD;
@@ -92,6 +95,7 @@ export interface Campaign {
   registeredVolunteers: number;
   isUserRegistered?: boolean;
   imageUrl: string;
+  organizerId?: string;
   organizer: {
     name: string;
     type: 'comunidad' | 'ong' | 'junta_vecinos' | 'estudiante';

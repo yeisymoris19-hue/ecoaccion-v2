@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { EcoReport, CategoryType, ProvinceRD, ReportStatus } from '../types';
 import { DOMINICAN_PROVINCES } from '../data/initialData';
+import { formatRelativeTime } from '../services/api';
 
 interface EcoAlertaSectionProps {
   reports: EcoReport[];
@@ -249,7 +250,7 @@ export const EcoAlertaSection: React.FC<EcoAlertaSectionProps> = ({
                           <MapPin size={12} className="shrink-0" />
                           {report.sector}
                         </span>
-                        <span>{report.createdAt}</span>
+                        <span>{formatRelativeTime(report.createdAt)}</span>
                       </div>
 
                       {/* Title */}
